@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "810015650934",
+    "project_id": "wifi-ad335",
+    "storage_bucket": "wifi-ad335.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:810015650934:android:04f14d1106dea3d6c91b57",
+        "android_client_info": {
+          "package_name": "com.example.wifi_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "810015650934-geg46ic81uhad14cgjl8lenknmduulf1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHewBonaTgG4fhRS17rdpVhCKETu2FaAU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "810015650934-geg46ic81uhad14cgjl8lenknmduulf1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
