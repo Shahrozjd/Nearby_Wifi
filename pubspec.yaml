@@ -32,6 +32,10 @@ dependencies:
   firebase_core: ^0.7.0
   fluttertoast: ^7.0.2
   wifi_flutter: ^0.1.0
+  csv: ^4.1.0
+  path_provider: ^1.6.28
+  permission_handler: ^5.1.0+2
+  downloads_path_provider: ^0.1.0
   
 
 dev_dependencies:

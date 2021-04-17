@@ -1,5 +1,12 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:csv/csv.dart';
+import 'package:downloads_path_provider/downloads_path_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:wifi_app/Models/Wifi.dart';
 import 'package:wifi_app/Widget/Diaglogue.dart';
 import 'package:wifi_app/Widget/Field.dart';
@@ -16,8 +23,12 @@ class _DashBoardState extends State<DashBoard> {
   TextEditingController wifiController;
   TextEditingController signalStrengthController;
   bool isLoading = false;
+  Directory _downloadsDirectory;
 
   List<Widget> _platformVersion = [];
+
+  List<List<dynamic>> rowscsv = List<List<dynamic>>();
+  List<dynamic> rows = List<dynamic>();
 
   //This is the init method of the widget class it will run when the class will be created one time so in this method you should
   //put all the logic that is required before the widget get created for example i have initialized the Text editing controllers
@@ -27,6 +38,7 @@ class _DashBoardState extends State<DashBoard> {
     super.initState();
     wifiController = TextEditingController();
     signalStrengthController = TextEditingController();
+    localpath();
   }
 
 //This is dispose method in which you should dispose anything when the widget gets destroyed to stop any memory leakage
@@ -36,6 +48,29 @@ class _DashBoardState extends State<DashBoard> {
     wifiController.dispose();
     signalStrengthController.dispose();
     super.dispose();
+  }
+
+  Future<void> localpath() async{
+
+    await Permission.storage.request();
+
+      Directory downloadsDirectory;
+      // Platform messages may fail, so we use a try/catch PlatformException.
+      try {
+        downloadsDirectory = await DownloadsPathProvider.downloadsDirectory;
+      } on PlatformException {
+        print('Could not get the downloads directory');
+      }
+
+      // If the widget was removed from the tree while the asynchronous platform
+      // message was in flight, we want to discard the reply rather than calling
+      // setState to update our non-existent appearance.
+      if (!mounted) return;
+
+      setState(() {
+        _downloadsDirectory = downloadsDirectory;
+      });
+
   }
 
   @override
@@ -60,6 +95,13 @@ class _DashBoardState extends State<DashBoard> {
                 }
                 final networks = await WifiFlutter.wifiNetworks;
                 setState(() {
+
+                  networks.map((e) => rowscsv.add(
+                    [
+                      e.ssid,e.rssi,e.isSecure
+                    ]
+                  )).toList();
+
                   _platformVersion = networks.map((network) => Container(
                     padding: EdgeInsets.all(10),
                     margin: EdgeInsets.all(10),
@@ -100,8 +142,12 @@ class _DashBoardState extends State<DashBoard> {
                       ],
                     ),
                   )).toList();
+
+
                 });
                 // "Ssid ${network.ssid} - Strength ${network.rssi} - Secure ${network.isSecure}")
+
+                print(rowscsv);
               })
         ],
       ),
@@ -141,7 +187,7 @@ class _DashBoardState extends State<DashBoard> {
                 child: isLoading
                     ? CircularProgressIndicator()
                     : Text(
-                        'Add to Firebase',
+                        'Export CSV',
                         style: TextStyle(
                           fontSize: 18,
                           color: Colors.white,
@@ -156,38 +202,68 @@ class _DashBoardState extends State<DashBoard> {
                 ),
                 //This is the main function you should be concerned about
                 onPressed: () async {
-                  //These are standard checks using text field controllers like if the filed is empty or it has incorect value then it will pop up an error
-                  if (wifiController.text.isEmpty ||
-                      signalStrengthController.text.isEmpty) {
-                    Dialogues.showErrorToast('Please Provide Wifi details');
-                  } else if (double.parse(
-                          signalStrengthController.text.trim()) >
-                      100) {
-                    Dialogues.showErrorToast('Please Between 0 to 100');
-                  } else {
-                    //If you complete the validation then this function will run in which you are adding the wifi to firebase
-                    //As the firebase querry is asynchoronus it will take time to get respond so here is a helper variable to show some loading
-                    setState(() {
-                      isLoading = true;
-                    });
-                    //This is the firebase request, you get the firbase instance first then you to to approperiate collection that is here wifi
-                    //and then you add the desired document here you are adding two values in one document
-                    FirebaseFirestore.instance.collection('wifi').add(Wifi(
-                            wifiName: wifiController.text.trim(),
-                            signalStrength: double.parse(
-                                signalStrengthController.text.trim()))
-                        .toMap());
 
-                    //After the request loading state is return to false
-                    setState(() {
-                      isLoading = false;
-                    });
 
-                    //Pop to show user their request has been completed and also clear the text from fields
-                    Dialogues.showToast('Successfully Added in Firebase');
-                    wifiController.clear();
-                    signalStrengthController.clear();
-                  }
+                  await Permission.storage.request();
+
+
+
+                  String getpath = _downloadsDirectory.path+"/filename.csv";
+
+                  print(" FILE " + getpath);
+
+                  File f = new File(getpath);
+
+                  String csv = const ListToCsvConverter().convert(rowscsv);
+
+                  print(csv);
+
+                  f.writeAsString(csv);
+
+
+
+
+                  // final directory = await getApplicationDocumentsDirectory();
+                  // final pathOfTheFileToWrite = directory.path + "/myCsvFile.csv";
+                  // File file = await File(pathOfTheFileToWrite);
+                  // file.writeAsString(csv);
+
+
+
+
+
+                  // //These are standard checks using text field controllers like if the filed is empty or it has incorect value then it will pop up an error
+                  // if (wifiController.text.isEmpty ||
+                  //     signalStrengthController.text.isEmpty) {
+                  //   Dialogues.showErrorToast('Please Provide Wifi details');
+                  // } else if (double.parse(
+                  //         signalStrengthController.text.trim()) >
+                  //     100) {
+                  //   Dialogues.showErrorToast('Please Between 0 to 100');
+                  // } else {
+                  //   //If you complete the validation then this function will run in which you are adding the wifi to firebase
+                  //   //As the firebase querry is asynchoronus it will take time to get respond so here is a helper variable to show some loading
+                  //   setState(() {
+                  //     isLoading = true;
+                  //   });
+                  //   //This is the firebase request, you get the firbase instance first then you to to approperiate collection that is here wifi
+                  //   //and then you add the desired document here you are adding two values in one document
+                  //   FirebaseFirestore.instance.collection('wifi').add(Wifi(
+                  //           wifiName: wifiController.text.trim(),
+                  //           signalStrength: double.parse(
+                  //               signalStrengthController.text.trim()))
+                  //       .toMap());
+                  //
+                  //   //After the request loading state is return to false
+                  //   setState(() {
+                  //     isLoading = false;
+                  //   });
+                  //
+                  //   //Pop to show user their request has been completed and also clear the text from fields
+                  //   Dialogues.showToast('Successfully Added in Firebase');
+                  //   wifiController.clear();
+                  //   signalStrengthController.clear();
+                  // }
                 },
               ),
             ),
